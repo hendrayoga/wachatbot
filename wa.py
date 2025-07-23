@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 
 COMMANDS = {
-    '1': ('text', 'https://www.google.com', 'Formulir Pendaftaran IMEI', 'https://www.facebook.com'),
+    '1': ('text', 'https://www.google.com', 'text', 'https://www.facebook.com'),
   }
 
 
