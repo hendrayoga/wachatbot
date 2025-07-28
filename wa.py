@@ -9,20 +9,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-ADMIN_NUMBER = '6282333813305'
+ADMIN_NUMBER = ''
 COMMANDS = {
-    '1': ('Registrasi IMEI', 'https://www.beacukai.go.id/faq/ketentuan-registrasi-imei.html', 'Formulir Pendaftaran IMEI', 'https://www.beacukai.go.id/register-imei.html'),
-    '2': ('Vehicle Declaration', 'https://www.beacukai.go.id/faq/ketentuan-impor-sementara-kendaraan-bermotor.html', 'Formulir VhD', 'https://vhd.beacukai.go.id/'),
-    '3': ('Tata laksana Ekspor', 'https://www.beacukai.go.id/faq/ketentuan-tata-laksana-ekspor.html'),
-    '4': ('Impor', 'https://www.beacukai.go.id/faq/ketentuan-impor-untuk-dipakai.html'),
-    '5': ('Manifes', 'https://www.beacukai.go.id/faq/ketentuan-pengangkutan-dan-manifest.html'),
-    '6': ('Uang Tunai', 'https://www.beacukai.go.id/faq/ketentuan-pembawaan-uang-tunai.html'),
-    '7': ('Barang Penumpang dan Awak Sarana Pengangkut', 'https://www.beacukai.go.id/faq/ketentuan-ekspor-dan-impor-barang-yang-dibawa-oleh-penumpang-dan-awak-sarana-pengangkut.html'),
-    '8': ('Larangan dan Pembatasan', 'https://www.beacukai.go.id/faq/ketentuan-larangan-dan-pembatasan-.html\nhttps://insw.go.id/intr'),
-    '9': ('Barang Kiriman', 'https://www.beacukai.go.id/faq/ketentuan-kepabeanan-cukai-dan-pajak-atas-impor-dan-ekspor-barang-kiriman.html'),
-    '10': ('Barang Pribadi Penumpang dan Jasa Titipan', 'https://www.beacukai.go.id/faq/ketentuan-barang-bawaan-pribadi-penumpang-dan-jasa-titipan-jastip-.html'),
-    '11': ('Customs Declaration (E-CD)', 'https://www.beacukai.go.id/faq/ketentuan-electronic-customs-decleration-e-cd-.html'),
-    '12': ('Pengajuan Izin Timbun', 'https://form.jotform.com/252048649457467', 'Silakan unggah dokumen Izin Timbun Anda di tautan berikut')
+    '1': ('text', 'https://www.google.com', 'text', 'https://www.facebook.com'),
+   
 }
 
 FILES = {
@@ -109,16 +99,16 @@ def handle_new_messages():
 
             elif command_input == '12':
                 sender['body'] = (
-                    "*12. Pengajuan Izin Timbun*\n\n"
+                    "*12. Pengajuan Dokumen*\n\n"
                     "Silakan unggah dokumen Anda ke link berikut:\n"
-                    "https://form.jotform.com/252048649457467\n\n"
+                    "https://form.jotform.com/\n\n"
                     "Setelah dokumen diunggah, admin akan segera dihubungi."
                 )
                 endpoint = 'messages/text'
 
                 notify_admin = {
                     'to': ADMIN_NUMBER,
-                    'body': f"📩 Pengguna {sender['to']} mengajukan Izin Timbun. Periksa dokumen yang diunggah."
+                    'body': f"📩 Pengguna {sender['to']} mengajukan Dokumen. Periksa dokumen yang diunggah."
                 }
                 send_whapi_request('messages/text', notify_admin)
 
