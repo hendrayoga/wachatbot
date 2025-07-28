@@ -5,17 +5,25 @@ import os
 from dotenv import load_dotenv
 import openai
 
-
-load_dotenv()  
+load_dotenv()
 
 app = Flask(__name__)
 
-
+ADMIN_NUMBER = '6282333813305'
 COMMANDS = {
-    '1': ('text', 'https://www.google.com', 'text', 'https://www.facebook.com'),
-  }
-
-
+    '1': ('Registrasi IMEI', 'https://www.beacukai.go.id/faq/ketentuan-registrasi-imei.html', 'Formulir Pendaftaran IMEI', 'https://www.beacukai.go.id/register-imei.html'),
+    '2': ('Vehicle Declaration', 'https://www.beacukai.go.id/faq/ketentuan-impor-sementara-kendaraan-bermotor.html', 'Formulir VhD', 'https://vhd.beacukai.go.id/'),
+    '3': ('Tata laksana Ekspor', 'https://www.beacukai.go.id/faq/ketentuan-tata-laksana-ekspor.html'),
+    '4': ('Impor', 'https://www.beacukai.go.id/faq/ketentuan-impor-untuk-dipakai.html'),
+    '5': ('Manifes', 'https://www.beacukai.go.id/faq/ketentuan-pengangkutan-dan-manifest.html'),
+    '6': ('Uang Tunai', 'https://www.beacukai.go.id/faq/ketentuan-pembawaan-uang-tunai.html'),
+    '7': ('Barang Penumpang dan Awak Sarana Pengangkut', 'https://www.beacukai.go.id/faq/ketentuan-ekspor-dan-impor-barang-yang-dibawa-oleh-penumpang-dan-awak-sarana-pengangkut.html'),
+    '8': ('Larangan dan Pembatasan', 'https://www.beacukai.go.id/faq/ketentuan-larangan-dan-pembatasan-.html\nhttps://insw.go.id/intr'),
+    '9': ('Barang Kiriman', 'https://www.beacukai.go.id/faq/ketentuan-kepabeanan-cukai-dan-pajak-atas-impor-dan-ekspor-barang-kiriman.html'),
+    '10': ('Barang Pribadi Penumpang dan Jasa Titipan', 'https://www.beacukai.go.id/faq/ketentuan-barang-bawaan-pribadi-penumpang-dan-jasa-titipan-jastip-.html'),
+    '11': ('Customs Declaration (E-CD)', 'https://www.beacukai.go.id/faq/ketentuan-electronic-customs-decleration-e-cd-.html'),
+    '12': ('Pengajuan Izin Timbun', 'https://form.jotform.com/252048649457467', 'Silakan unggah dokumen Izin Timbun Anda di tautan berikut')
+}
 
 FILES = {
     'IMAGE': './files/file_example_JPG_100kB.jpg',
@@ -24,19 +32,13 @@ FILES = {
     'VCARD': './files/sample-vcard.txt'
 }
 
-
 def send_whapi_request(endpoint, params=None, method='POST'):
-    """
-    Send a request to the Whapi.Cloud API.
-    Handles both JSON and multipart (media) requests.
-    """
     headers = {
         'Authorization': f"Bearer {os.getenv('TOKEN')}"
     }
     url = f"{os.getenv('API_URL')}/{endpoint}"
     if params:
         if 'media' in params:
-            # Handle file upload for media messages
             details = params.pop('media').split(';')
             with open(details[0], 'rb') as file:
                 m = MultipartEncoder(fields={**params, 'media': (details[0], file, details[1])})
@@ -49,40 +51,34 @@ def send_whapi_request(endpoint, params=None, method='POST'):
             response = requests.request(method, url, json=params, headers=headers)
     else:
         response = requests.request(method, url, headers=headers)
-    print('Whapi response:', response.json())  # Debug output
+    print('Whapi response:', response.json())
     return response.json()
 
-
 def set_hook():
-    """
-    Register webhook URL with Whapi.Cloud if BOT_URL is set.
-    """
     if os.getenv('BOT_URL'):
         settings = {
             'webhooks': [
                 {
                     'url': os.getenv('BOT_URL'),
-                    'events': [
-                        {'type': "messages", 'method': "post"}
-                    ],
+                    'events': [{'type': "messages", 'method': "post"}],
                     'mode': "method"
                 }
             ]
         }
         send_whapi_request('settings', settings, 'PATCH')
 
-
 def ask_openai(prompt):
-    """
-    Send a prompt to OpenAI ChatGPT and return the response.
-    """
     client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    model="gpt-4-turbo",  # Use same model
+    messages=[
+        {"role": "system", "content": "You are ChatGPT, a helpful assistant."},  # Emulate system prompt
+        {"role": "user", "content": prompt}
+    ],
+    max_tokens=2000,
+    temperature=0.7,
+)
     return response.choices[0].message.content.strip()
-
 
 @app.route('/hook/messages', methods=['POST'])
 def handle_new_messages():
@@ -92,10 +88,12 @@ def handle_new_messages():
 
         for message in messages:
             if message.get('from_me'):
-                continue  # Ignore messages sent by the bot itself
+                continue
 
             sender = {'to': message.get('chat_id')}
             command_input = message.get('text', {}).get('body', '').strip()
+
+            print(f"Received: {command_input} from {sender['to']}")
 
             if command_input.lower().startswith('/ai '):
                 user_prompt = command_input[4:].strip()
@@ -108,6 +106,21 @@ def handle_new_messages():
                     except Exception as e:
                         sender['body'] = f"OpenAI error: {e}"
                 endpoint = 'messages/text'
+
+            elif command_input == '12':
+                sender['body'] = (
+                    "*12. Pengajuan Izin Timbun*\n\n"
+                    "Silakan unggah dokumen Anda ke link berikut:\n"
+                    "https://form.jotform.com/252048649457467\n\n"
+                    "Setelah dokumen diunggah, admin akan segera dihubungi."
+                )
+                endpoint = 'messages/text'
+
+                notify_admin = {
+                    'to': ADMIN_NUMBER,
+                    'body': f"📩 Pengguna {sender['to']} mengajukan Izin Timbun. Periksa dokumen yang diunggah."
+                }
+                send_whapi_request('messages/text', notify_admin)
 
             elif command_input in COMMANDS:
                 entry = COMMANDS[command_input]
@@ -127,13 +140,13 @@ def handle_new_messages():
             elif command_input.lower() == 'menu':
                 sender['body'] = "📌 *Daftar FAQ*\n\n" + '\n'.join(
                     f"{key}. {value[0]}" for key, value in COMMANDS.items()
-                ) + "\n\nKetik nomor (tanpa titik dan koma) untuk melihat info lebih lanjut."
+                ) + "\n\nKetik nomor (tanpa titik dan koma) untuk melihat info lebih lanjut. Untuk bertanya dengan Ai, ketik */Ai (pertanyaan yang diajukan)*"
                 endpoint = 'messages/text'
 
             else:
                 sender['body'] = "📌 *Daftar FAQ*\n\n" + '\n'.join(
                     f"{key}. {value[0]}" for key, value in COMMANDS.items()
-                ) + "\n\nKetik nomor (tanpa titik dan koma) untuk melihat info lebih lanjut."
+                ) + "\n\nKetik nomor (tanpa titik dan koma) untuk melihat info lebih lanjut. Untuk bertanya dengan Ai, ketik */Ai (pertanyaan yang diajukan)*"
                 endpoint = 'messages/text'
 
             if endpoint:
@@ -146,17 +159,11 @@ def handle_new_messages():
         print(f"❌ Error: {e}")
         return str(e), 500
 
-
-
 @app.route('/', methods=['GET'])
 def index():
-    """
-    Health check endpoint.
-    """
     return 'Bot is running'
 
-
 if __name__ == '__main__':
-    set_hook() 
+    set_hook()
     port = os.getenv('PORT') or (443 if os.getenv('BOT_URL', '').startswith('https:') else 80)
     app.run(port=port, debug=True)
